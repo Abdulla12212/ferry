@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# .NET
+bin/
+obj/
+*.user
+.vs/
+TestResults/
+
+# Ferry
+.env
+.work/
+.ferry/
+
+# OS and editors
+.DS_Store
+.idea/
