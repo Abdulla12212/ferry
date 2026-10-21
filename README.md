@@ -37,3 +37,14 @@ dotnet src/Ferry.RoslynTools/bin/Release/net10.0/Ferry.RoslynTools.dll inventory
 
 It prints JSON (projects, packages, risky APIs with file and line) to stdout and warnings to stderr.
 The risky-API list is `roslyn-tools/src/Ferry.RoslynTools/api-risks.json`.
+
+## Try the code reader as an MCP tool
+
+```bash
+cd roslyn-tools
+dotnet build -c Release
+npx @modelcontextprotocol/inspector dotnet src/Ferry.RoslynTools/bin/Release/net10.0/Ferry.RoslynTools.dll mcp
+```
+
+In MCP Inspector, open the Tools tab, pick `inventory`, set `repoPath` to an absolute folder path, and run it.
+Start the tool from the built `.dll`, not `dotnet run`, because build messages would break MCP.

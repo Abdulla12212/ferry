@@ -9,6 +9,7 @@ public static class Cli
         usage:
           Ferry.RoslynTools --version
           Ferry.RoslynTools inventory <repo> [--risks <api-risks.json>]
+          Ferry.RoslynTools mcp        (run as an MCP server over stdio)
         """;
 
     public static string Version =>

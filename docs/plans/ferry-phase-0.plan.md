@@ -10,7 +10,7 @@ todos:
     status: completed
   - id: p0-roslyn-mcp
     content: Turn the C# reader into an MCP tool and test it in MCP Inspector
-    status: pending
+    status: completed
   - id: p0-python-pkg
     content: Create the Python project and call the C# tool from it
     status: pending
