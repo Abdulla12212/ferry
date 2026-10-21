@@ -26,3 +26,14 @@ uv run pytest
 cd ../roslyn-tools
 dotnet test
 ```
+
+## Try the code reader
+
+```bash
+cd roslyn-tools
+dotnet build -c Release
+dotnet src/Ferry.RoslynTools/bin/Release/net10.0/Ferry.RoslynTools.dll inventory path/to/old-dotnet-repo
+```
+
+It prints JSON (projects, packages, risky APIs with file and line) to stdout and warnings to stderr.
+The risky-API list is `roslyn-tools/src/Ferry.RoslynTools/api-risks.json`.

@@ -1,0 +1,649 @@
+{
+  // Things in an old .NET Framework repo that need attention on the way to .NET 10.
+  // Edit freely: this is your migration knowledge, not the tool's.
+  //
+  // Each rule says what to look for. A thing can only be listed in one rule.
+  //
+  //   namespaces        prefix match on dots; the longest prefix wins (System.Windows.Forms beats System.Windows)
+  //   types             simple type names; keep them distinctive because there is no semantic analysis.
+  //                     Attributes can be listed without the "Attribute" suffix.
+  //   assemblies        <Reference Include="..."/> in old-style .csproj files
+  //   packages          NuGet package ids (PackageReference or packages.config)
+  //   properties        MSBuild properties that are set to true, e.g. UseWPF
+  //   items             item names in a .csproj, e.g. COMReference
+  //   imports           text inside an <Import Project="..."/> path, e.g. Microsoft.WebApplication.targets
+  //   projectTypeGuids  Visual Studio project kinds from <ProjectTypeGuids>
+  //   files             file names with * wildcards, e.g. *.aspx. Reported once per project, with a count.
+  //
+  // severity: high = blocks the move, medium = needs rework, low = check it
+  "rules": [
+    // ---------------------------------------------------------------- ASP.NET
+    {
+      "id": "system-web",
+      "category": "asp.net",
+      "severity": "high",
+      "description": "System.Web (HttpContext.Current, HttpRequest, HttpApplication, Session, Cache) does not exist in ASP.NET Core. Use Microsoft.AspNetCore.Http and IHttpContextAccessor.",
+      "namespaces": ["System.Web"],
+      "assemblies": ["System.Web", "System.Web.Extensions", "System.Web.ApplicationServices", "System.Web.DynamicData", "System.Web.Entity", "System.Web.Abstractions", "System.Web.RegularExpressions", "System.Web.Mobile"],
+      "packages": ["Microsoft.Web.Infrastructure", "WebActivator", "WebActivatorEx", "Microsoft.AspNet.TelemetryCorrelation", "Microsoft.ApplicationInsights.Web"]
+    },
+    {
+      "id": "aspnet-web-application-project",
+      "category": "asp.net",
+      "severity": "high",
+      "description": "Old ASP.NET web application project (IIS, Global.asax, Web.config). It must become an ASP.NET Core project with Program.cs and middleware.",
+      "imports": ["Microsoft.WebApplication.targets"],
+      "projectTypeGuids": ["349C5851-65DF-11DA-9384-00065B846F21", "E3E379DF-F4C6-4180-9B81-6769533ABE47", "E53F8FEA-EAE0-44A6-8774-FFD645390401"],
+      "properties": ["UseIISExpress"],
+      "files": ["Global.asax"]
+    },
+    {
+      "id": "web-config",
+      "category": "configuration",
+      "severity": "medium",
+      "description": "Web.config (and Web.Debug.config style transforms) has no direct equivalent. Settings move to appsettings.json, environment variables and code in Program.cs. Check for system.webServer modules, handlers and rewrite rules.",
+      "files": ["Web.config", "Web.*.config"]
+    },
+    {
+      "id": "aspnet-webforms",
+      "category": "asp.net",
+      "severity": "high",
+      "description": "Web Forms (.aspx, .ascx, master pages, server controls, ViewState) is not supported. It needs a rewrite to Razor Pages, MVC or Blazor.",
+      "namespaces": ["System.Web.UI"],
+      "packages": ["Microsoft.AspNet.FriendlyUrls", "Microsoft.AspNet.ScriptManager.MSAjax", "Microsoft.AspNet.ScriptManager.WebForms"],
+      "files": ["*.aspx", "*.ascx", "*.master"]
+    },
+    {
+      "id": "aspnet-http-pipeline",
+      "category": "asp.net",
+      "severity": "high",
+      "description": "HttpModules and HttpHandlers (IHttpModule, IHttpHandler, .ashx, HttpApplication events) become ASP.NET Core middleware or endpoints.",
+      "types": ["IHttpModule", "IHttpHandler", "IHttpAsyncHandler", "IHttpHandlerFactory", "HttpApplication", "HttpTaskAsyncHandler"],
+      "files": ["*.ashx"]
+    },
+    {
+      "id": "aspnet-mvc",
+      "category": "asp.net",
+      "severity": "high",
+      "description": "ASP.NET MVC 5 (System.Web.Mvc) is a different framework from ASP.NET Core MVC. Controllers, filters, model binders, routing, HtmlHelpers and Razor views need porting.",
+      "namespaces": ["System.Web.Mvc", "System.Web.Razor", "System.Web.WebPages", "System.Web.Helpers"],
+      "assemblies": ["System.Web.Mvc", "System.Web.Razor", "System.Web.WebPages", "System.Web.WebPages.Razor", "System.Web.WebPages.Deployment", "System.Web.Helpers"],
+      "packages": ["Microsoft.AspNet.Mvc", "Microsoft.AspNet.Razor", "Microsoft.AspNet.WebPages", "Microsoft.AspNet.WebPages.WebData"],
+      "files": ["*.cshtml", "*.vbhtml"]
+    },
+    {
+      "id": "aspnet-webapi",
+      "category": "asp.net",
+      "severity": "high",
+      "description": "ASP.NET Web API 2 (System.Web.Http, ApiController, HttpConfiguration, message handlers) needs porting to ASP.NET Core controllers or minimal APIs.",
+      "namespaces": ["System.Web.Http"],
+      "assemblies": ["System.Web.Http", "System.Web.Http.WebHost", "System.Web.Http.SelfHost", "System.Web.Http.Owin", "System.Web.Http.Cors"],
+      "packages": ["Microsoft.AspNet.WebApi", "Microsoft.AspNet.WebApi.Core", "Microsoft.AspNet.WebApi.WebHost", "Microsoft.AspNet.WebApi.Cors", "Microsoft.AspNet.WebApi.OwinSelfHost", "Microsoft.AspNet.WebApi.SelfHost", "Microsoft.AspNet.WebApi.HelpPage", "Microsoft.AspNet.WebApi.Tracing"]
+    },
+    {
+      "id": "aspnet-odata",
+      "category": "asp.net",
+      "severity": "high",
+      "description": "ASP.NET Web API OData needs Microsoft.AspNetCore.OData, which has a different API.",
+      "namespaces": ["System.Web.OData", "System.Web.Http.OData", "Microsoft.AspNet.OData"],
+      "assemblies": ["System.Web.OData", "System.Web.Http.OData"],
+      "packages": ["Microsoft.AspNet.OData", "Microsoft.AspNet.WebApi.OData"]
+    },
+    {
+      "id": "aspnet-membership",
+      "category": "security",
+      "severity": "high",
+      "description": "Membership, Roles, Profile and FormsAuthentication (System.Web.Security) do not exist. Use ASP.NET Core Identity or cookie authentication.",
+      "namespaces": ["System.Web.Security", "System.Web.Profile"],
+      "packages": ["Microsoft.AspNet.Providers", "Microsoft.AspNet.Providers.Core", "Microsoft.AspNet.Providers.LocalDB"]
+    },
+    {
+      "id": "aspnet-identity",
+      "category": "security",
+      "severity": "medium",
+      "description": "ASP.NET Identity 2 needs ASP.NET Core Identity. The user tables and password hashes need a migration plan.",
+      "namespaces": ["Microsoft.AspNet.Identity"],
+      "packages": ["Microsoft.AspNet.Identity.Core", "Microsoft.AspNet.Identity.EntityFramework", "Microsoft.AspNet.Identity.Owin"]
+    },
+    {
+      "id": "aspnet-bundling",
+      "category": "asp.net",
+      "severity": "medium",
+      "description": "System.Web.Optimization bundling and minification is gone. Use a front-end build (Vite, webpack) or LibMan/WebOptimizer.",
+      "namespaces": ["System.Web.Optimization"],
+      "assemblies": ["System.Web.Optimization", "WebGrease"],
+      "packages": ["Microsoft.AspNet.Web.Optimization", "WebGrease"]
+    },
+    {
+      "id": "aspnet-javascript-serializer",
+      "category": "serialization",
+      "severity": "medium",
+      "description": "JavaScriptSerializer and System.Web.Script are not available. Use System.Text.Json.",
+      "namespaces": ["System.Web.Script"],
+      "types": ["JavaScriptSerializer"]
+    },
+    {
+      "id": "signalr-classic",
+      "category": "asp.net",
+      "severity": "medium",
+      "description": "ASP.NET SignalR 2 server needs ASP.NET Core SignalR. The client protocol is not compatible, so old clients must be updated too.",
+      "namespaces": ["Microsoft.AspNet.SignalR"],
+      "packages": ["Microsoft.AspNet.SignalR", "Microsoft.AspNet.SignalR.Core", "Microsoft.AspNet.SignalR.SystemWeb", "Microsoft.AspNet.SignalR.JS"]
+    },
+    {
+      "id": "owin-katana",
+      "category": "asp.net",
+      "severity": "medium",
+      "description": "OWIN/Katana middleware and Startup classes must move to ASP.NET Core middleware.",
+      "namespaces": ["Microsoft.Owin", "Owin"],
+      "types": ["OwinStartup", "OwinMiddleware"],
+      "packages": ["Owin", "Microsoft.Owin", "Microsoft.Owin.Host.SystemWeb", "Microsoft.Owin.Host.HttpListener", "Microsoft.Owin.SelfHost", "Microsoft.Owin.Cors", "Microsoft.Owin.StaticFiles", "Microsoft.Owin.Security", "Microsoft.Owin.Security.Cookies", "Microsoft.Owin.Security.OAuth", "Microsoft.Owin.Security.OpenIdConnect", "Microsoft.Owin.Security.Jwt", "Microsoft.Owin.Security.ActiveDirectory", "Microsoft.Owin.Security.Google", "Microsoft.Owin.Security.Facebook", "Microsoft.Owin.Security.MicrosoftAccount", "Microsoft.Owin.Security.Twitter"]
+    },
+    {
+      "id": "third-party-web-packages",
+      "category": "asp.net",
+      "severity": "low",
+      "description": "Web-only add-ons (DI containers for MVC/Web API, Elmah, Glimpse, old Swashbuckle). Each needs its ASP.NET Core replacement.",
+      "packages": ["Elmah", "Elmah.MVC", "Glimpse", "Glimpse.Mvc5", "Glimpse.AspNet", "Glimpse.Ado", "Autofac.Mvc5", "Autofac.WebApi2", "Unity.Mvc", "Unity.Mvc5", "Unity.WebAPI", "Unity.AspNet.WebApi", "Ninject.Web.Mvc", "Ninject.MVC5", "Ninject.Web.WebApi", "StructureMap.MVC5", "Swashbuckle", "Swashbuckle.Core"]
+    },
+
+    // ------------------------------------------------- Services and remoting
+    {
+      "id": "wcf",
+      "category": "web-services",
+      "severity": "high",
+      "description": "WCF server (System.ServiceModel, .svc files, ServiceHost) is not in .NET 10. Use CoreWCF, gRPC or Web API. WCF clients still work through the System.ServiceModel.* NuGet packages.",
+      "namespaces": ["System.ServiceModel"],
+      "assemblies": ["System.ServiceModel", "System.ServiceModel.Web", "System.ServiceModel.Activation", "System.ServiceModel.Routing", "System.ServiceModel.Discovery"],
+      "types": ["ServiceContract", "OperationContract", "ServiceHost", "WebServiceHost", "ChannelFactory", "ServiceBehavior", "FaultContract", "MessageContract", "ServiceKnownType"],
+      "items": ["WCFMetadata", "WCFMetadataStorage"],
+      "files": ["*.svc"]
+    },
+    {
+      "id": "asmx-web-services",
+      "category": "web-services",
+      "severity": "high",
+      "description": "ASMX web services and Web References (System.Web.Services, SoapHttpClientProtocol) are not supported in .NET 10. Use WCF client packages, HttpClient or a generated client.",
+      "namespaces": ["System.Web.Services"],
+      "assemblies": ["System.Web.Services"],
+      "types": ["WebService", "WebMethod", "SoapHttpClientProtocol"],
+      "items": ["WebReferences", "WebReferenceUrl"],
+      "files": ["*.asmx"]
+    },
+    {
+      "id": "wcf-data-services",
+      "category": "web-services",
+      "severity": "high",
+      "description": "WCF Data Services (System.Data.Services, ODataLib 5) is not supported. Use ASP.NET Core OData and Microsoft.OData.Client.",
+      "namespaces": ["System.Data.Services", "Microsoft.Data.OData", "Microsoft.Data.Edm"],
+      "assemblies": ["System.Data.Services", "System.Data.Services.Client", "System.Data.Services.Design"],
+      "packages": ["Microsoft.Data.Services", "Microsoft.Data.Services.Client", "Microsoft.Data.OData", "Microsoft.Data.Edm"]
+    },
+    {
+      "id": "remoting",
+      "category": "runtime",
+      "severity": "high",
+      "description": "Remoting (System.Runtime.Remoting) is not supported. Use gRPC, HTTP APIs or a message bus.",
+      "namespaces": ["System.Runtime.Remoting"],
+      "assemblies": ["System.Runtime.Remoting"]
+    },
+    {
+      "id": "msmq",
+      "category": "messaging",
+      "severity": "high",
+      "description": "MSMQ (System.Messaging) is not part of .NET 10. Use a message broker such as RabbitMQ or Azure Service Bus.",
+      "namespaces": ["System.Messaging"],
+      "assemblies": ["System.Messaging"]
+    },
+    {
+      "id": "workflow-foundation",
+      "category": "runtime",
+      "severity": "high",
+      "description": "Windows Workflow Foundation (System.Activities, System.Workflow, .xamlx) is not supported. CoreWF is a community port, or rewrite the flows.",
+      "namespaces": ["System.Activities", "System.Workflow", "System.ServiceModel.Activities"],
+      "assemblies": ["System.Activities", "System.Activities.Presentation", "System.Workflow.Activities", "System.Workflow.ComponentModel", "System.Workflow.Runtime", "System.ServiceModel.Activities"],
+      "items": ["XamlAppDef"],
+      "files": ["*.xamlx"],
+      "projectTypeGuids": ["14822709-B5A1-4724-98CA-57A101D1B079"]
+    },
+    {
+      "id": "enterprise-services",
+      "category": "runtime",
+      "severity": "high",
+      "description": "COM+ and System.EnterpriseServices (ServicedComponent) are not supported.",
+      "namespaces": ["System.EnterpriseServices"],
+      "assemblies": ["System.EnterpriseServices"],
+      "types": ["ServicedComponent"]
+    },
+    {
+      "id": "service-point-manager",
+      "category": "network",
+      "severity": "low",
+      "description": "ServicePointManager settings (connection limits, TLS, certificate callbacks) do not affect HttpClient the same way in .NET 10. Configure SocketsHttpHandler instead.",
+      "types": ["ServicePointManager", "ServicePoint"]
+    },
+
+    // ----------------------------------------------- Runtime and the platform
+    {
+      "id": "binary-formatter",
+      "category": "serialization",
+      "severity": "high",
+      "description": "BinaryFormatter is insecure and was removed in .NET 9. Switch to System.Text.Json or another serializer.",
+      "namespaces": ["System.Runtime.Serialization.Formatters"],
+      "types": ["BinaryFormatter", "SoapFormatter", "NetDataContractSerializer", "LosFormatter", "ObjectStateFormatter"]
+    },
+    {
+      "id": "appdomain",
+      "category": "runtime",
+      "severity": "medium",
+      "description": "Creating and unloading AppDomains is not supported. AssemblyLoadContext replaces it. AppDomain.CurrentDomain itself still works.",
+      "types": ["AppDomain", "AppDomainSetup", "AppDomainManager"]
+    },
+    {
+      "id": "thread-abort",
+      "category": "runtime",
+      "severity": "medium",
+      "description": "Thread.Abort throws PlatformNotSupportedException. Use cooperative cancellation (CancellationToken).",
+      "types": ["ThreadAbortException"]
+    },
+    {
+      "id": "code-access-security",
+      "category": "security",
+      "severity": "medium",
+      "description": "Code Access Security and partial trust are gone. Permission attributes do nothing.",
+      "namespaces": ["System.Security.Permissions", "System.Security.Policy"],
+      "types": ["SecurityPermission", "PermissionSet", "SecurityCritical", "SecuritySafeCritical", "SecurityTransparent", "SecurityRules", "AllowPartiallyTrustedCallers"]
+    },
+    {
+      "id": "codedom-compiler",
+      "category": "runtime",
+      "severity": "medium",
+      "description": "CodeDOM compilation (CSharpCodeProvider, CompilerParameters) does not work. Use Roslyn (Microsoft.CodeAnalysis) to compile code at run time.",
+      "types": ["CSharpCodeProvider", "VBCodeProvider", "CodeDomProvider", "CompilerParameters"]
+    },
+    {
+      "id": "add-in-framework",
+      "category": "runtime",
+      "severity": "high",
+      "description": "System.AddIn (MAF) is not supported. Use AssemblyLoadContext with your own plug-in contracts.",
+      "namespaces": ["System.AddIn"],
+      "assemblies": ["System.AddIn", "System.AddIn.Contract"]
+    },
+    {
+      "id": "mef-v1",
+      "category": "runtime",
+      "severity": "low",
+      "description": "MEF 1 (System.ComponentModel.Composition) works through a NuGet package. System.Composition (MEF 2) is the lighter option.",
+      "namespaces": ["System.ComponentModel.Composition"],
+      "assemblies": ["System.ComponentModel.Composition"]
+    },
+    {
+      "id": "installer-classes",
+      "category": "deployment",
+      "severity": "high",
+      "description": "System.Configuration.Install (Installer, ServiceInstaller, installutil) does not exist. Install services with sc.exe, a setup tool, or the hosting package's UseWindowsService.",
+      "namespaces": ["System.Configuration.Install"],
+      "assemblies": ["System.Configuration.Install"],
+      "types": ["ServiceInstaller", "ServiceProcessInstaller", "RunInstaller"]
+    },
+    {
+      "id": "windows-service",
+      "category": "windows-only",
+      "severity": "low",
+      "description": "ServiceBase works only on Windows, through the System.ServiceProcess.ServiceController package. The Worker Service template with UseWindowsService is the modern shape.",
+      "namespaces": ["System.ServiceProcess"],
+      "assemblies": ["System.ServiceProcess"],
+      "types": ["ServiceBase"]
+    },
+    {
+      "id": "clickonce-api",
+      "category": "deployment",
+      "severity": "high",
+      "description": "System.Deployment.Application (ApplicationDeployment, ClickOnce update checks) is not available in .NET 10.",
+      "namespaces": ["System.Deployment"],
+      "assemblies": ["System.Deployment"]
+    },
+    {
+      "id": "system-configuration",
+      "category": "configuration",
+      "severity": "low",
+      "description": "ConfigurationManager and app.config work through the System.Configuration.ConfigurationManager package, but new code usually moves to appsettings.json and Microsoft.Extensions.Configuration.",
+      "namespaces": ["System.Configuration"],
+      "assemblies": ["System.Configuration"],
+      "types": ["ConfigurationManager"],
+      "files": ["App.config"]
+    },
+    {
+      "id": "runtime-caching",
+      "category": "runtime",
+      "severity": "low",
+      "description": "System.Runtime.Caching.MemoryCache works through a NuGet package. Microsoft.Extensions.Caching.Memory is the modern choice.",
+      "namespaces": ["System.Runtime.Caching"],
+      "assemblies": ["System.Runtime.Caching"]
+    },
+
+    // ----------------------------------------------------------- Windows-only
+    {
+      "id": "windows-registry",
+      "category": "windows-only",
+      "severity": "medium",
+      "description": "The registry is Windows only. It works on .NET 10 for Windows (Microsoft.Win32.Registry package) and fails elsewhere.",
+      "namespaces": ["Microsoft.Win32"],
+      "types": ["RegistryKey"]
+    },
+    {
+      "id": "wmi-management",
+      "category": "windows-only",
+      "severity": "medium",
+      "description": "WMI (System.Management) works on Windows through the System.Management package. It does not work on Linux or macOS.",
+      "namespaces": ["System.Management"],
+      "assemblies": ["System.Management"],
+      "types": ["ManagementObjectSearcher", "ManagementObject", "ManagementClass"]
+    },
+    {
+      "id": "active-directory",
+      "category": "windows-only",
+      "severity": "medium",
+      "description": "System.DirectoryServices (Active Directory, AccountManagement) is a Windows-only package on .NET. LDAP through System.DirectoryServices.Protocols is more portable.",
+      "namespaces": ["System.DirectoryServices"],
+      "assemblies": ["System.DirectoryServices", "System.DirectoryServices.AccountManagement", "System.DirectoryServices.Protocols", "System.DirectoryServices.ActiveDirectory"]
+    },
+    {
+      "id": "windows-identity",
+      "category": "windows-only",
+      "severity": "low",
+      "description": "WindowsIdentity and WindowsPrincipal are Windows only. WindowsImpersonationContext was removed; use WindowsIdentity.RunImpersonated.",
+      "types": ["WindowsIdentity", "WindowsPrincipal", "WindowsImpersonationContext", "WindowsBuiltInRole"]
+    },
+    {
+      "id": "windows-diagnostics",
+      "category": "windows-only",
+      "severity": "low",
+      "description": "Event Log and Performance Counters are Windows only and need NuGet packages. Consider ILogger and System.Diagnostics.Metrics.",
+      "types": ["EventLog", "EventLogInstaller", "PerformanceCounter", "PerformanceCounterCategory", "PerformanceCounterInstaller", "CounterCreationData"]
+    },
+    {
+      "id": "windows-speech",
+      "category": "windows-only",
+      "severity": "low",
+      "description": "System.Speech is a Windows-only package.",
+      "namespaces": ["System.Speech"]
+    },
+    {
+      "id": "windows-crypto",
+      "category": "windows-only",
+      "severity": "medium",
+      "description": "CNG types and DPAPI (ProtectedData) are Windows only. Use the cross-platform RSA, ECDsa and Aes factory methods, or the Data Protection API.",
+      "types": ["RSACng", "ECDsaCng", "ECDiffieHellmanCng", "AesCng", "TripleDESCng", "CngKey", "ProtectedData", "ProtectedMemory"]
+    },
+    {
+      "id": "obsolete-crypto",
+      "category": "security",
+      "severity": "low",
+      "description": "These crypto classes are marked obsolete and give build warnings. Use Aes.Create() and RandomNumberGenerator.",
+      "types": ["RijndaelManaged", "Rijndael", "RNGCryptoServiceProvider"]
+    },
+    {
+      "id": "wpf",
+      "category": "windows-only",
+      "severity": "medium",
+      "description": "WPF runs on .NET 10 but only on Windows. The project must target net10.0-windows and be converted to SDK style.",
+      "namespaces": ["System.Windows", "System.Xaml", "System.Printing", "PresentationFramework", "PresentationCore", "WindowsBase"],
+      "assemblies": ["PresentationFramework", "PresentationCore", "WindowsBase", "System.Xaml", "ReachFramework", "System.Printing", "UIAutomationClient", "UIAutomationTypes"],
+      "properties": ["UseWPF"],
+      "items": ["ApplicationDefinition"]
+    },
+    {
+      "id": "winforms",
+      "category": "windows-only",
+      "severity": "medium",
+      "description": "WinForms runs on .NET 10 but only on Windows. The project must target net10.0-windows. Designer files and some old controls (DataGrid, MainMenu) need attention.",
+      "namespaces": ["System.Windows.Forms", "System.Drawing.Design"],
+      "assemblies": ["System.Windows.Forms"],
+      "properties": ["UseWindowsForms"]
+    },
+    {
+      "id": "system-drawing",
+      "category": "windows-only",
+      "severity": "medium",
+      "description": "System.Drawing (GDI+) is Windows only since .NET 6. For cross-platform image work use ImageSharp or SkiaSharp.",
+      "namespaces": ["System.Drawing"],
+      "assemblies": ["System.Drawing"],
+      "packages": ["System.Drawing.Common"]
+    },
+    {
+      "id": "chart-controls",
+      "category": "ui",
+      "severity": "high",
+      "description": "Microsoft Chart Controls (System.Windows.Forms.DataVisualization, System.Web.UI.DataVisualization) are not in .NET 10. Use a charting library.",
+      "namespaces": ["System.Windows.Forms.DataVisualization", "System.Web.UI.DataVisualization"],
+      "assemblies": ["System.Windows.Forms.DataVisualization", "System.Web.DataVisualization"]
+    },
+    {
+      "id": "silverlight",
+      "category": "ui",
+      "severity": "high",
+      "description": "Silverlight is dead and has no .NET 10 version. Rewrite the UI (Blazor, WPF, MAUI).",
+      "namespaces": ["System.Windows.Browser", "Microsoft.Silverlight"],
+      "assemblies": ["System.Windows.Browser"],
+      "imports": ["Microsoft.Silverlight.CSharp.targets", "Microsoft.Silverlight.Common.targets"],
+      "projectTypeGuids": ["A1591282-1198-4647-A2B1-27E5FF5F6F3B"],
+      "properties": ["SilverlightApplication"]
+    },
+    {
+      "id": "reporting",
+      "category": "reporting",
+      "severity": "medium",
+      "description": "Old ReportViewer and Crystal Reports controls are Framework-only. ReportViewer has community ports for WinForms; Crystal Reports has no .NET 10 runtime.",
+      "namespaces": ["Microsoft.Reporting.WebForms", "Microsoft.Reporting.WinForms", "CrystalDecisions"],
+      "assemblies": ["Microsoft.ReportViewer.WebForms", "Microsoft.ReportViewer.WinForms", "Microsoft.ReportViewer.Common", "Microsoft.ReportViewer.ProcessingObjectModel", "CrystalDecisions.CrystalReports.Engine", "CrystalDecisions.Shared", "CrystalDecisions.ReportSource", "CrystalDecisions.Windows.Forms", "CrystalDecisions.Web"],
+      "packages": ["Microsoft.ReportingServices.ReportViewerControl.Winforms", "Microsoft.ReportingServices.ReportViewerControl.WebForms"],
+      "files": ["*.rdlc", "*.rpt"]
+    },
+
+    // ---------------------------------------------------------- COM and Office
+    {
+      "id": "com-interop",
+      "category": "windows-only",
+      "severity": "medium",
+      "description": "COM references and COM-visible assemblies are Windows only. COMReference items need rework in SDK-style projects, and regasm/RegisterForComInterop needs an EnableComHosting setup.",
+      "items": ["COMReference", "COMFileReference"],
+      "properties": ["RegisterForComInterop"],
+      "types": ["ComImport"]
+    },
+    {
+      "id": "pinvoke",
+      "category": "native-interop",
+      "severity": "low",
+      "description": "P/Invoke into Windows DLLs only works on Windows. Check each DllImport for a cross-platform equivalent, and consider LibraryImport.",
+      "types": ["DllImport"]
+    },
+    {
+      "id": "office-interop",
+      "category": "windows-only",
+      "severity": "medium",
+      "description": "Office interop (Excel, Word, Outlook) runs on Windows with Office installed. Embedded interop types need EmbedInteropTypes. On servers consider OpenXML SDK or ClosedXML.",
+      "namespaces": ["Microsoft.Office.Interop", "Microsoft.Office.Core", "Microsoft.Vbe.Interop"],
+      "assemblies": ["Microsoft.Office.Interop.Excel", "Microsoft.Office.Interop.Word", "Microsoft.Office.Interop.Outlook", "Microsoft.Office.Interop.PowerPoint", "Microsoft.Office.Interop.Access", "office"],
+      "packages": ["Microsoft.Office.Interop.Excel", "Microsoft.Office.Interop.Word", "Microsoft.Office.Interop.Outlook", "Microsoft.Office.Interop.PowerPoint"]
+    },
+    {
+      "id": "vsto",
+      "category": "windows-only",
+      "severity": "high",
+      "description": "VSTO add-ins (Microsoft.Office.Tools) must stay on .NET Framework. They cannot move to .NET 10.",
+      "namespaces": ["Microsoft.Office.Tools", "Microsoft.VisualStudio.Tools.Applications"],
+      "assemblies": ["Microsoft.Office.Tools.Common", "Microsoft.Office.Tools.Excel", "Microsoft.Office.Tools.Word", "Microsoft.Office.Tools.Outlook", "Microsoft.VisualStudio.Tools.Applications.Runtime"],
+      "imports": ["Microsoft.VisualStudio.Tools.Office.targets"],
+      "projectTypeGuids": ["BAA0C2D2-18E2-41B9-852F-F413020CAA33"]
+    },
+    {
+      "id": "visual-studio-extension",
+      "category": "tooling",
+      "severity": "high",
+      "description": "Visual Studio extensions (VSIX, Microsoft.VisualStudio.Shell, EnvDTE) usually stay on .NET Framework or need the out-of-process VisualStudio.Extensibility model.",
+      "namespaces": ["Microsoft.VisualStudio.Shell", "EnvDTE"],
+      "packages": ["Microsoft.VisualStudio.SDK", "Microsoft.VSSDK.BuildTools"],
+      "imports": ["Microsoft.VsSDK.targets"],
+      "projectTypeGuids": ["82B43B9B-A64C-4715-B499-D71E9CA2BD60"]
+    },
+
+    // ------------------------------------------------------------------- Data
+    {
+      "id": "entity-framework-6",
+      "category": "data",
+      "severity": "medium",
+      "description": "EF6 runs on .NET 10 with the EntityFramework 6.5 package, but some designer and provider features do not. EF Core is the long-term move.",
+      "namespaces": ["System.Data.Entity"],
+      "assemblies": ["EntityFramework", "EntityFramework.SqlServer"],
+      "packages": ["EntityFramework"]
+    },
+    {
+      "id": "entity-framework-edmx",
+      "category": "data",
+      "severity": "high",
+      "description": "EF4/EF5 (ObjectContext, System.Data.Entity.dll, .edmx models) are not supported. EDMX files need EF Core scaffolding or the EF6 package.",
+      "namespaces": ["System.Data.Objects", "System.Data.EntityClient", "System.Data.Metadata", "System.Data.Mapping"],
+      "assemblies": ["System.Data.Entity"],
+      "items": ["EntityDeploy"],
+      "files": ["*.edmx"]
+    },
+    {
+      "id": "linq-to-sql",
+      "category": "data",
+      "severity": "high",
+      "description": "LINQ to SQL (System.Data.Linq, .dbml files) has no .NET 10 version. Move to EF Core or Dapper.",
+      "namespaces": ["System.Data.Linq"],
+      "assemblies": ["System.Data.Linq"],
+      "files": ["*.dbml"]
+    },
+    {
+      "id": "oracle-legacy-providers",
+      "category": "data",
+      "severity": "high",
+      "description": "System.Data.OracleClient was removed, and the unmanaged ODP.NET (Oracle.DataAccess) does not support .NET Core. Use Oracle.ManagedDataAccess.Core.",
+      "namespaces": ["System.Data.OracleClient", "Oracle.DataAccess"],
+      "assemblies": ["System.Data.OracleClient", "Oracle.DataAccess"]
+    },
+    {
+      "id": "system-data-sqlclient",
+      "category": "data",
+      "severity": "medium",
+      "description": "System.Data.SqlClient is in maintenance only. Switch to Microsoft.Data.SqlClient (watch the Encrypt=true default).",
+      "namespaces": ["System.Data.SqlClient"],
+      "packages": ["System.Data.SqlClient"]
+    },
+    {
+      "id": "oledb",
+      "category": "windows-only",
+      "severity": "low",
+      "description": "OleDb works on .NET only on Windows, through the System.Data.OleDb package, and needs the matching provider (ACE, Jet) installed.",
+      "namespaces": ["System.Data.OleDb"]
+    },
+    {
+      "id": "sql-clr",
+      "category": "data",
+      "severity": "medium",
+      "description": "SQL Server CLR objects (SqlFunction, SqlProcedure, user-defined types) run inside SQL Server on .NET Framework. They cannot target .NET 10.",
+      "types": ["SqlFunction", "SqlProcedure", "SqlTrigger", "SqlUserDefinedType", "SqlUserDefinedAggregate"]
+    },
+
+    // -------------------------------------------------- Identity and cloud SDKs
+    {
+      "id": "wif-claims",
+      "category": "security",
+      "severity": "high",
+      "description": "Windows Identity Foundation in the framework (System.IdentityModel.Services, WS-Federation modules) is gone. Use ASP.NET Core authentication handlers.",
+      "namespaces": ["System.IdentityModel.Services", "System.IdentityModel.Configuration", "System.IdentityModel.Selectors", "System.IdentityModel.Metadata", "Microsoft.IdentityModel.Claims", "Microsoft.IdentityModel.Web"],
+      "assemblies": ["System.IdentityModel.Services", "System.IdentityModel.Selectors"]
+    },
+    {
+      "id": "adal",
+      "category": "security",
+      "severity": "medium",
+      "description": "ADAL (Microsoft.IdentityModel.Clients.ActiveDirectory) is retired. Use MSAL (Microsoft.Identity.Client).",
+      "namespaces": ["Microsoft.IdentityModel.Clients.ActiveDirectory"],
+      "assemblies": ["Microsoft.IdentityModel.Clients.ActiveDirectory"],
+      "packages": ["Microsoft.IdentityModel.Clients.ActiveDirectory"]
+    },
+    {
+      "id": "azure-legacy-sdk",
+      "category": "cloud",
+      "severity": "medium",
+      "description": "Old Azure SDKs (WindowsAzure.Storage, ServiceBus, DocumentDB, Cloud Services runtime) are deprecated. Use the Azure.* packages (Azure.Storage.Blobs, Azure.Messaging.ServiceBus, Microsoft.Azure.Cosmos).",
+      "namespaces": ["Microsoft.WindowsAzure", "Microsoft.ServiceBus", "Microsoft.Azure.Documents"],
+      "assemblies": ["Microsoft.WindowsAzure.Storage", "Microsoft.WindowsAzure.ServiceRuntime", "Microsoft.WindowsAzure.Diagnostics", "Microsoft.WindowsAzure.Configuration", "Microsoft.ServiceBus"],
+      "packages": ["WindowsAzure.Storage", "WindowsAzure.ServiceBus", "Microsoft.Azure.ServiceBus", "Microsoft.Azure.DocumentDB", "Microsoft.Azure.EventHubs", "Microsoft.Azure.Storage.Common", "Microsoft.Azure.Storage.Blob", "Microsoft.Azure.Storage.Queue"]
+    },
+    {
+      "id": "microsoft-practices",
+      "category": "libraries",
+      "severity": "medium",
+      "description": "Enterprise Library and the old Unity container (Microsoft.Practices.*) have no .NET 10 version. Replace with Microsoft.Extensions.Logging, DI and Polly.",
+      "namespaces": ["Microsoft.Practices.EnterpriseLibrary", "Microsoft.Practices.Unity", "Microsoft.Practices.ObjectBuilder2"],
+      "packages": ["EnterpriseLibrary.Common", "EnterpriseLibrary.Logging", "EnterpriseLibrary.Data", "EnterpriseLibrary.ExceptionHandling", "EnterpriseLibrary.Validation", "EnterpriseLibrary.Caching", "EnterpriseLibrary.PolicyInjection", "EnterpriseLibrary.SemanticLogging", "EnterpriseLibrary.TransientFaultHandling"]
+    },
+
+    // ----------------------------------------------------------- Tests and tools
+    {
+      "id": "ms-fakes",
+      "category": "testing",
+      "severity": "medium",
+      "description": "Microsoft Fakes shims are not supported on .NET 10. Refactor to interfaces, or use a library such as Pose or Harmony.",
+      "namespaces": ["Microsoft.QualityTools.Testing.Fakes"],
+      "assemblies": ["Microsoft.QualityTools.Testing.Fakes"],
+      "items": ["Fakes"]
+    },
+    {
+      "id": "legacy-mstest-files",
+      "category": "testing",
+      "severity": "low",
+      "description": "Old test settings, ordered tests and test lists (.testsettings, .orderedtest, .vsmdi) are not supported. Use .runsettings and test categories.",
+      "files": ["*.testsettings", "*.orderedtest", "*.vsmdi"]
+    },
+
+    // ------------------------------------------------- Project and build format
+    {
+      "id": "packages-config",
+      "category": "build",
+      "severity": "low",
+      "description": "packages.config is the old NuGet format. Migrate to PackageReference.",
+      "files": ["packages.config"]
+    },
+    {
+      "id": "assemblyinfo-file",
+      "category": "build",
+      "severity": "low",
+      "description": "AssemblyInfo.cs duplicates the attributes SDK-style projects generate. Move the values into the .csproj, or set GenerateAssemblyInfo to false.",
+      "files": ["AssemblyInfo.cs"]
+    },
+    {
+      "id": "legacy-build-imports",
+      "category": "build",
+      "severity": "low",
+      "description": "Old MSBuild imports (NuGet.targets, Microsoft.Bcl.Build.targets) are not needed in SDK-style projects and can break the build.",
+      "imports": ["NuGet.targets", "Microsoft.Bcl.Build.targets"]
+    },
+    {
+      "id": "legacy-compiler-packages",
+      "category": "build",
+      "severity": "low",
+      "description": "These packages ship an old compiler for ASP.NET. The .NET SDK has its own compiler, so remove them.",
+      "packages": ["Microsoft.Net.Compilers", "Microsoft.CodeDom.Providers.DotNetCompilerPlatform"]
+    },
+    {
+      "id": "bcl-backports",
+      "category": "build",
+      "severity": "low",
+      "description": "Backport packages for old .NET Framework versions (Microsoft.Bcl, Microsoft.Net.Http) are not needed on .NET 10 and can cause conflicts.",
+      "packages": ["Microsoft.Bcl", "Microsoft.Bcl.Async", "Microsoft.Bcl.Build", "Microsoft.Net.Http"]
+    },
+    {
+      "id": "il-merge",
+      "category": "build",
+      "severity": "low",
+      "description": "ILMerge and Costura do not work on .NET 10. Use single-file publish instead.",
+      "packages": ["ILMerge", "ILMerge.MSBuild.Tasks", "MSBuild.ILMerge.Task", "Costura.Fody"]
+    }
+  ]
+}

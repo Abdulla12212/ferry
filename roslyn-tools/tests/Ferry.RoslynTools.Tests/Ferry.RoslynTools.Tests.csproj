@@ -18,6 +18,13 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!-- Fixtures are sample repos for the reader: copy them, but do not compile or build them. -->
+  <ItemGroup>
+    <Compile Remove="Fixtures/**" />
+    <None Remove="Fixtures/**" />
+    <Content Include="Fixtures/**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\Ferry.RoslynTools\Ferry.RoslynTools.csproj" />
   </ItemGroup>

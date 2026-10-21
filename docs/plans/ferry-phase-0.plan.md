@@ -7,7 +7,7 @@ todos:
     status: completed
   - id: p0-roslyn-cli
     content: Write the C# code reader that lists projects, packages and risky old APIs
-    status: pending
+    status: completed
   - id: p0-roslyn-mcp
     content: Turn the C# reader into an MCP tool and test it in MCP Inspector
     status: pending
