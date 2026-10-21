@@ -13,7 +13,7 @@ todos:
     status: completed
   - id: p0-python-pkg
     content: Create the Python project and call the C# tool from it
-    status: pending
+    status: completed
   - id: p0-gateway
     content: Write the code that talks to Claude and OpenAI and records tokens and cost
     status: pending

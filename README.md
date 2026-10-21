@@ -48,3 +48,13 @@ npx @modelcontextprotocol/inspector dotnet src/Ferry.RoslynTools/bin/Release/net
 
 In MCP Inspector, open the Tools tab, pick `inventory`, set `repoPath` to an absolute folder path, and run it.
 Start the tool from the built `.dll`, not `dotnet run`, because build messages would break MCP.
+
+## Call the code reader from Python
+
+```bash
+cd roslyn-tools && dotnet build -c Release && cd ..
+cd agent
+uv run ferry inventory path/to/old-dotnet-repo
+```
+
+Python starts the C# tool from the command in `ferry.toml` (`[tools.roslyn]`), asks it for the facts over MCP, and prints the JSON.
