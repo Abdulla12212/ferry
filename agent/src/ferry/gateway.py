@@ -164,7 +164,8 @@ def _gemini_generate(
     )
     if status >= 400:
         message = _error_message(status, payload)
-        if thinking and "thinking" in message.lower():
+        # 3.5 Flash-Lite rejects thinkingBudget with a generic 400, so retry once without it.
+        if thinking and status == 400:
             return _gemini_generate(
                 model,
                 prompt,

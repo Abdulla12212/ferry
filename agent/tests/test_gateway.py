@@ -107,7 +107,7 @@ def test_complete_retries_without_thinking_config(tmp_path: Path) -> None:
     def transport(url: str, headers: dict, body: dict) -> tuple[int, dict]:
         calls.append(body)
         if "thinkingConfig" in body["generationConfig"]:
-            return 400, {"error": {"message": "thinking is not supported"}}
+            return 400, {"error": {"message": "Request contains an invalid argument."}}
         return 200, _payload('{"answer": 4, "note": "ok"}')
 
     result = complete(
