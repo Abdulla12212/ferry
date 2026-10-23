@@ -6,8 +6,19 @@ from typing import Annotated
 import typer
 
 from ferry import __version__
-from ferry.config import ConfigError
+from ferry.config import ConfigError, load_models
+from ferry.gateway import GatewayError, complete
 from ferry.roslyn import RoslynToolError, get_inventory
+
+PROBE_PROMPT = "What is 2 + 2? Put the sum in answer. Put the word ok in note."
+PROBE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "answer": {"type": "integer", "description": "The sum 2 + 2."},
+        "note": {"type": "string", "description": "The word ok."},
+    },
+    "required": ["answer", "note"],
+}
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -48,3 +59,39 @@ def inventory(
         typer.echo(f"error: {error}", err=True)
         raise typer.Exit(2) from error
     typer.echo(json.dumps(facts, indent=2))
+
+
+@app.command()
+def probe(
+    log: Annotated[
+        Path | None,
+        typer.Option(help="Call log. Default: .ferry/calls.jsonl next to ferry.toml."),
+    ] = None,
+) -> None:
+    """Ask every configured model the same question and print tokens and cost."""
+    try:
+        models = load_models()
+    except ConfigError as error:
+        typer.echo(f"error: {error}", err=True)
+        raise typer.Exit(2) from error
+
+    failed = False
+    for model in models.values():
+        try:
+            result = complete(model, PROBE_PROMPT, PROBE_SCHEMA, temperature=0, log_path=log)
+        except GatewayError as error:
+            failed = True
+            typer.echo(f"error: {model.name}: {error}", err=True)
+            continue
+        answer = result.data.get("answer")
+        if answer != 4:
+            failed = True
+            typer.echo(f"error: {model.name}: answer was {answer!r}, expected 4", err=True)
+        usage = result.usage
+        typer.echo(
+            f"{result.model} {result.model_id} answer={answer} "
+            f"tokens={usage.input_tokens}/{usage.output_tokens} "
+            f"time={usage.elapsed_s:.2f}s list_cost=${usage.cost_usd:.6f}"
+        )
+    if failed:
+        raise typer.Exit(1)

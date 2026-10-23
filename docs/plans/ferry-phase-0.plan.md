@@ -15,8 +15,8 @@ todos:
     content: Create the Python project and call the C# tool from it
     status: completed
   - id: p0-gateway
-    content: Write the code that talks to Claude and OpenAI and records tokens and cost
-    status: pending
+    content: Write the code that talks to Gemini and records tokens and cost
+    status: completed
   - id: p0-assess
     content: "Build ferry assess: repo facts in, checked report out"
     status: pending
@@ -52,7 +52,7 @@ It reads an old .NET Framework project and gives you a short report:
 flowchart LR
     repo["Old .NET repo"] --> reader["C# code reader"]
     reader --> facts["Facts: projects, packages, risky APIs"]
-    facts --> ai["AI model: Claude or OpenAI"]
+    facts --> ai["AI model: Gemini"]
     ai --> checker["Checker"]
     checker --> report["Report and cost"]
 ```
@@ -72,7 +72,7 @@ flowchart LR
 
 - Install the tools: `brew install uv dotnet`, then `uv python install 3.13`.
 - Check that `dotnet --list-sdks` shows 10.0.
-- Get API keys from Anthropic and OpenAI, and set a spending limit of about $10 on each.
+- Get a free Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey). The free tier bills $0 within its quota.
 - Create a GitHub repo for this folder. Public is fine.
 
 ## The 8 steps
@@ -112,9 +112,9 @@ flowchart LR
 
 ### 5. Talk to the AI models (5 hours)
 
-- Write one small piece of code that calls Claude or OpenAI the same way, and asks for structured output.
+- Write one small piece of code that calls the configured Gemini models the same way, and asks for structured output.
 - It also saves every call to a log file: tokens used, time taken, and cost.
-- **It works when:** the same test question gets a valid answer from both providers, with the cost printed.
+- **It works when:** the same test question gets a valid answer from both models, with the cost printed.
 - **Who writes it:** you. This is the main AI lesson of the week.
 
 ### 6. Build `ferry assess` (5 hours)
@@ -173,14 +173,14 @@ Expected total AI spend is under $10.
 - `okta/okta-aspnet` at `aa064e81e88979dbf73998fee431fae532571545`: several projects
 - `GuOrg/Gu.Wpf.ValidationScope` at `7a90141fb44205add8da38fc8a7d2eb80ea0d1c3`: WPF, Windows only
 
-**Models:**
+**Models** (free tier; prices below are the published paid rates, USD per 1M tokens):
 
-- Claude Sonnet 5.5: $2 per million input tokens, $10 per million output tokens.
-- One low-cost OpenAI model: copy its name and price from OpenAI's pricing page.
+- `gemini-3.6-flash`: $0.75 input, $3.75 output.
+- `gemini-3.5-flash-lite`: $0.30 input, $2.50 output.
 
 **Docs:**
 
 - [MCP C# SDK](https://csharp.sdk.modelcontextprotocol.io/v2/concepts/getting-started.html)
 - [MCP Python SDK](https://py.sdk.modelcontextprotocol.io/v2/client/)
-- [Anthropic structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)
-- [OpenAI structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs)
+- [Gemini structured outputs](https://ai.google.dev/gemini-api/docs/structured-output)
+- [Gemini pricing](https://ai.google.dev/gemini-api/docs/pricing)

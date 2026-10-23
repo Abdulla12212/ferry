@@ -16,7 +16,7 @@ Status: Phase 0 (foundations).
 Requires uv and the .NET 10 SDK (`brew install uv dotnet`).
 
 ```bash
-cp .env.example .env    # add your API keys
+cp .env.example .env    # add a free Gemini API key from https://aistudio.google.com/apikey
 
 cd agent
 uv sync
@@ -58,3 +58,14 @@ uv run ferry inventory path/to/old-dotnet-repo
 ```
 
 Python starts the C# tool from the command in `ferry.toml` (`[tools.roslyn]`), asks it for the facts over MCP, and prints the JSON.
+
+## Try the model call
+
+`ferry probe` asks every model in `ferry.toml` the same question (`2 + 2`), checks the JSON, prints tokens and list-price cost, and appends a line to `.ferry/calls.jsonl`.
+
+```bash
+cd agent
+uv run ferry probe
+```
+
+Both models are Gemini on the free tier (`gemini-3.6-flash` and `gemini-3.5-flash-lite`). The printed cost is the published paid rate. The free tier does not bill it. Automated tests use a fake response and do not call Gemini.

@@ -1,23 +1,23 @@
-[models.sonnet]
-provider = "anthropic"
-id = "claude-sonnet-5-5"
-input_usd_per_mtok = 2.00
-output_usd_per_mtok = 10.00
-cache_read_usd_per_mtok = 0.10
-cache_write_usd_per_mtok = 2.50
+# Published paid-tier rates, USD per 1M tokens.
+# The Gemini free tier bills $0. The log still records this list price.
+# https://ai.google.dev/gemini-api/docs/pricing
+
+[models.flash]
+provider = "gemini"
+id = "gemini-3.6-flash"
+input_usd_per_mtok = 0.75
+output_usd_per_mtok = 3.75
 supports_temperature = true
 
-[models.cheap]
-provider = "openai"
-id = "gpt-6-luna"
-input_usd_per_mtok = 0.10
-output_usd_per_mtok = 0.50
-cache_read_usd_per_mtok = 0.01
-cache_write_usd_per_mtok = 0.125
+[models.lite]
+provider = "gemini"
+id = "gemini-3.5-flash-lite"
+input_usd_per_mtok = 0.30
+output_usd_per_mtok = 2.50
 supports_temperature = true
 
 [assess]
-default_model = "sonnet"
+default_model = "lite"
 max_input_tokens = 30000
 
 [tools.roslyn]
