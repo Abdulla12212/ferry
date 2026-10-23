@@ -19,7 +19,7 @@ todos:
     status: completed
   - id: p0-assess
     content: "Build ferry assess: repo facts in, checked report out"
-    status: pending
+    status: completed
   - id: p0-bench
     content: Download 5 real repos and run ferry assess on all of them
     status: pending

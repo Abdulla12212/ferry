@@ -59,6 +59,17 @@ uv run ferry inventory path/to/old-dotnet-repo
 
 Python starts the C# tool from the command in `ferry.toml` (`[tools.roslyn]`), asks it for the facts over MCP, and prints the JSON.
 
+## Assess a repo
+
+```bash
+cd roslyn-tools && dotnet build -c Release && cd ..
+cd agent
+uv run ferry assess ../roslyn-tools/tests/Ferry.RoslynTools.Tests/Fixtures/legacy-web
+uv run ferry assess path/to/old-dotnet-repo --model flash
+```
+
+It reads the repo facts, shortens them to fit `max_input_tokens` in `ferry.toml`, asks the model for a report in a fixed JSON shape, and checks that every project, file and line the model names is in the facts. If the check fails, it shows the model its mistakes and asks once more. It saves `<repo>-<model>.json` and `.md` in `.ferry/reports/`, and prints tokens and list-price cost. Exit code 1 means the report failed the check.
+
 ## Try the model call
 
 `ferry probe` asks every model in `ferry.toml` the same question (`2 + 2`), checks the JSON, prints tokens and list-price cost, and appends a line to `.ferry/calls.jsonl`.
